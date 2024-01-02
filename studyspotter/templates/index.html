@@ -1,0 +1,86 @@
+<!--
+*  REFERENCES
+*  Title: Creating a landing page in Django
+*  Author: Nikita Kholin
+*  Date: Nov 12, 2018
+*  URL: https://dev.to/hmlon/creating-a-landing-page-in-django-20pg
+-->
+
+
+{% extends 'base.html' %}
+
+{% block title %}Welcome{% endblock %}
+
+{% block content %}
+  {% load socialaccount %}
+
+  {% if user.is_authenticated %}
+    <!--<p>Welcome, You are logged in as {{ user.username }}</p>-->
+    <section class="landing-section landing-main">
+      <div class="landing-section-content2">
+        <h1 class="brand2">How to use Study Spotter</h1>
+        <br>
+        <p>
+            <ul>
+                <li> Right click on the map to add a location. </li>
+                <li> After filling out the form to add a location, your request will be sent for admin approval. </li>
+                <li> Your request will either be:
+                    <ul>
+                        <li> <strong>Pending:</strong> Until an admin approves or rejects the location, a yellow marker will
+                        appear on the map that only you and all administrators can see. </li>
+                        <li> <strong>Accepted:</strong> Congrats, your study spot will appear on the map as a blue marker to you, the creator,
+                        but as a red marker to other users. </li>
+                        <li> <strong>Rejected:</strong> Your study spot will not appear on the map </li>
+                    </ul>
+                </li>
+                <br>
+                <li> Click on a marker on the map to read a brief description about that study spot. </li>
+                <li> A marker can only be edited or deleted by its creator or the administrators. </li>
+                <li> Click on the arrow on the left side of the map to open a sidebar. This gives you the ability to:
+                    <ul>
+                        <li>Use the searchbar at the top to find locations identified by Google Maps.</li>
+                        <li>Filter by locations with food.</li>
+                        <li>Identify markers on the map by clicking on the item in the list.</li>
+                        <li>Click on the star corresponding to each location in the sidebar to add it to your Starred Locations
+                        list, which you can access through "My Study Spots."</li>
+                    </ul>
+                <li> Go to "My Study Spots" on the nav bar to view all the locations you've submitted (including rejected markers)
+                and locations you've starred/favorited.</li>
+            </ul>
+            For admin users only:
+            <ul>
+                <li> See the Pending Locations in the nav bar to keep track of incoming Study Spot requests </li>
+                <li> Either "accept" or "reject" a study spot. When rejecting a location, please provide a reason. </li>
+            </ul>
+        </p>
+      </div>
+    </section>
+    <!--<a href="/accounts/logout">Logout</a>-->
+
+  {% else %}
+    <section class="landing-section landing-main">
+      <div class="landing-section-content">
+        <h1 class="brand">UVA STUDY SPOTTER</h1>
+        <h2>
+          Helping you crush your finals... by guiding you to the perfect study spot
+        </h2>
+        <br>
+        <p class="landing-main-text" style="text-align: center;">
+            With our website, discover, add, and star your favorite study spots on and off Grounds.
+            <br>
+            Explore <span style="color: #c55e00;">50+</span> crowdsourced study locations.
+            Join our growing community of <span style="color: #c55e00;">1,500+ users</span> today:
+        </p>
+          <span>
+              <button class="login-buttons" onclick="location.href='{% provider_login_url 'google' %}'">Login with Google</button>
+              <!--<button class="login-buttons" onclick="location.href='/accounts/login'">Login with Password</button>-->
+              <button class="login-buttons" onclick="location.href='/login'">Login with Password</button>
+          </span>
+      </div>
+    </section>
+
+  <!--<a href="{% provider_login_url 'google' %}">Login With Google</a>-->
+  {% endif %}
+
+{% endblock %}
+

@@ -1,0 +1,173 @@
+<!--
+*  REFERENCES
+*  Title: Grid system
+*  URL: https://getbootstrap.com/docs/4.3/layout/grid/
+-->
+
+{% extends 'base.html' %}
+
+{% block title %}Pending Locations{% endblock %}
+
+{% block content %}
+<h1 style="margin: 10px 15px;">Pending Locations</h1>
+{% if user.is_staff %}
+    <section class="vh-100" style="background-color: #eee;">
+        <div class="container py-5 h-100">
+            <div class="row d-flex justify-content-center align-items-center h-100">
+                <div class="col-md-12 col-xl-10">
+                    <div class="card">
+                        <div class="card-header p-3">
+                            <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>Pending Study Spots</h5>
+                        </div>
+                        <div class="card-body" data-mdb-perfect-scrollbar="true" style="position: relative; height: 400px">
+                            <table class="table mb-0" id="pendingSpotsTable">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Item</th>
+                                        <th scope="col">Author</th>
+                                        <th scope="col">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablebody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endif %}
+
+
+<form method="post" id="approve_form" style="display: none;">
+    {% csrf_token %}
+</form>
+
+<!-- Modal for Rejection Reasoning -->
+<div class="modal" id = "rejection-modal">
+    <div class = "modal-content">
+        <span class="closing">&times;</span>
+        <h2>Reject Study Spot?</h2>
+        <form method="post" id="reject_modal_id">
+            <div>
+                <label for="rejection-reason">Rejection Reason:</label>
+                <select id="rejection-reason" name="rejection_reason">
+                    <option value="inappropriate">Inappropriate Content</option>
+                    <option value="duplicate">Duplicate Submission</option>
+                    <option value="location unclear">Location Unclear</option>
+                    <option value="other">Other (Specify Below)</option>
+                </select>
+            </div>
+            <textarea rows="4" id="rej_form_desc" style="display: none;" name="loc-description"></textarea>
+
+            <input type="submit" id="submit-rej-form"/>
+            {% csrf_token %}
+
+        </form>
+    </div>
+</div>
+
+<script>
+    function approvePin(id){
+        var form = document.getElementById("approve_form")
+        form.action = "/approve_pin/" + id + "/";
+        form.submit();
+        icon_url = "https://maps.google.com/mapfiles/ms/icons/green-dot.png"
+        var id = "row_" + id;
+        var rowToRemove = document.getElementById(id);
+        rowToRemove.parentNode.removeChild(rowToRemove);
+    }
+
+    function rejectPin(id){
+        var modal = document.getElementById("rejection-modal");
+        modal.style.display = "block";
+
+        var rejectionReasonDropdown = document.getElementById("rejection-reason");
+        var rejectionReason = rejectionReasonDropdown.value;
+        var formDescTextarea = document.getElementById("rej_form_desc");
+        var form = document.getElementById("reject_modal_id");
+
+
+        rejectionReasonDropdown.addEventListener("change", function () {
+            if (rejectionReasonDropdown.value === "other") {
+                // If "Other" is selected, show text area for specifying the reason
+                formDescTextarea.style.display = "block";
+            } else {
+                // else, hide text area
+                formDescTextarea.style.display = "none";
+            }
+        });
+
+        form.addEventListener("submit", function (event) {
+            event.preventDefault;
+            // var rejectionReason = rejectionReasonDropdown.value;
+            var rejectionReason = document.getElementById("rejection-reason").value
+
+
+            //   // Update the pin color
+            // var pinElementId = "pin_" + id; // Replace with the actual id of your pin element
+            // var pinElement = document.getElementById(pinElementId);
+
+            // // Assuming pinElement is an image element or something similar
+            // pinElement.src = "https://maps.google.com/mapfiles/ms/icons/red-dot.png";
+
+
+            form.action = "/reject_pin/" + id + "/" + encodeURIComponent(rejectionReason) + "/";
+            var rowId = "row_" + id;
+            var rowToRemove = document.getElementById(rowId);
+            rowToRemove.parentNode.removeChild(rowToRemove);
+            modal.style.display = "none";
+        })
+
+        // Set up the close button in the modal
+        var span = document.getElementsByClassName("closing")[0];
+        span.onclick = function () {
+            modal.style.display = "none";
+        };
+
+        // Set up the window click event to close the modal
+        window.onclick = function (event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        };
+
+
+        // icon_url = "https://maps.google.com/mapfiles/ms/icons/red-dot.png"
+        // document.getElementById(id).icon = icon_url
+    }
+
+    {% for marker in markers %}
+        var name_info = "{{ marker.name }}"
+        var name_food = "{{ marker.food }}"
+        var creator = "{{ marker.author }}"
+        var status = "{{ marker.status }}"
+        // init Admin Approval Table
+        var table = document.getElementById('tablebody');
+        // var rowId = "row_" + id; // causing errors
+        var rowId = 0
+
+        // add a row for each pending marker
+        if (status == 'pending'){
+            var row = table.insertRow(rowId);
+            row.id = rowId;
+            rowId++;
+            console.log("bruh")
+            var cell1 = row.insertCell(0);
+            cell1.innerHTML = name_info;
+            var cellId =  "name_info_cell_" + name_info;
+            cell1.id = cellId
+
+            var cell2 = row.insertCell(1);
+            cell2.innerHTML = creator;
+
+            var cell3 = row.insertCell(2);
+            cell3.innerHTML =
+                '<button class="btn btn-sm btn-success" id="approvePin" onclick="approvePin({{ marker.id }})">Approve</button>' + '   ' +
+                '<button class="btn btn-sm btn-danger" id="rejectPin" onclick="rejectPin({{ marker.id }})">Reject</button>';
+        }
+    {% endfor %}
+</script>
+
+{% endblock %}

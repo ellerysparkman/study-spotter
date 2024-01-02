@@ -1,0 +1,30 @@
+<!--
+*  REFERENCES
+*  Title: Django LoginView
+*  URL: https://www.pythontutorial.net/django-tutorial/django-loginview/
+-->
+
+{%extends 'base.html' %}
+
+{%block content%}
+  {% load socialaccount %}
+    <section class="landing-section landing-main">
+        <form method="post" class="landing-section-content3" novalidate>
+	  	{% csrf_token %}
+	    <h2 class="text-center">Log in to Study Spotter</h2>
+		{% for field in form %}
+	    		{{ field.label_tag }}
+	        	{{ field }}
+	        	{% if field.errors %}
+	        		<small>{{ field.errors|striptags }}</small>
+	        	{% endif %}
+		{% endfor %}
+		<br>
+		<input type="submit" value="Login" class="btn btn-primary">
+		<hr>
+		<!--<p class="text-center">Forgot your password? <a href="#">Reset Password</a></p>-->
+		<p class="text-center">Don't have an account? <a href="/register">Join Now</a></p>
+      </form>
+    </section>
+
+{%endblock content%}

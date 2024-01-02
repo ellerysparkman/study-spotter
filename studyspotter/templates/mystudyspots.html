@@ -1,0 +1,87 @@
+<!--
+*  REFERENCES
+*  Title: Accordion
+*  URL: https://getbootstrap.com/docs/5.0/components/accordion/
+-->
+
+{% extends 'base.html' %}
+
+{% block title %}My Study Spots{% endblock %}
+
+{% block content %}
+<h1 style="margin: 10px 15px;">My Study Spots</h1>
+    <div style="display: flex; justify-content: space-evenly; align-items: center; flex-wrap: wrap;">
+        <h4 style="margin: 10px 15px;">Locations I've Submitted</h4>
+        <h4 style="margin: 10px 15px;">Starred Locations</h4>
+    </div>
+
+<div style="display: flex; justify-content: space-evenly; align-items: center; flex-wrap: wrap;">
+    <div style="width: 48%; margin: 0px auto auto 5px;">
+        <div class="accordion" id="accordionExample" style="width:100%; margin: 10px 15px;">
+            {% for marker in markers %}
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}" aria-expanded="false" aria-controls="collapse{{ forloop.counter }}">
+                            <div style="width:90%; display:flex; justify-content:space-between;">
+                                <span><strong>Name:&nbsp;</strong> {{ marker.name }}</span>
+                                {% if marker.status == "approved" %}
+                                    <span class="badge bg-success rounded-pill">Approved</span>
+                                {% elif marker.status == "pending" %}
+                                    <span class="badge bg-warning text-dark rounded-pill">Pending</span>
+                                {% elif marker.status == "rejected" %}
+                                    <span class="badge bg-danger rounded-pill">Rejected</span>
+                                {% endif %}
+                            </div>
+                        </button>
+                    </h2>
+                    <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse" aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            <strong>Description: </strong> {{ marker.description }}
+                            <br>
+                            <strong>Food location: </strong>
+                            {% if marker.food %}
+                                Yes
+                            {% else %}
+                                No
+                            {% endif %}
+                            <br>
+                            {% if marker.status == "rejected" %}
+                                <strong>Rejection reason: </strong> {{ marker.rejection_reason }}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div style="width: 48%; margin: 0px auto auto 5px;">
+        <div class="accordion" id="accordionExample2" style="width:100%; margin: 10px 15px;">
+            {% for marker in faves %}
+                <div class="accordion-item">
+                   <h2 class="accordion-header" id="heading2_{{ forloop.counter }}">
+                       <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse2_{{ forloop.counter }}" aria-expanded="false" aria-controls="collapse2_{{ forloop.counter }}">
+                           <div style="width:90%; display:flex; justify-content:space-between;">
+                               <span><strong>Name:&nbsp;</strong> {{ marker.name }}</span>
+                           </div>
+                       </button>
+                   </h2>
+                   <div id="collapse2_{{ forloop.counter }}" class="accordion-collapse collapse" aria-labelledby="heading2_{{ forloop.counter }}" data-bs-parent="#accordionExample2">
+                       <div class="accordion-body">
+                           <strong>Description: </strong> {{ marker.description }}
+                           <br>
+                           <strong>Food location: </strong>
+                           {% if marker.food %}
+                               Yes
+                           {% else %}
+                               No
+                           {% endif %}
+                       </div>
+                   </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

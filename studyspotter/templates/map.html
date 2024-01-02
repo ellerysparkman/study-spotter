@@ -1,0 +1,390 @@
+<!--
+*  REFERENCES
+*  Title: Unescape HTML entities in JavaScript?
+*  URL: https://stackoverflow.com/questions/1912501/unescape-html-entities-in-javascript
+
+*  Title: Side Bar Pastel
+*  Author: Yuhomyan
+*  URL: https://codepen.io/yuhomyan/pen/xxVOPQL
+
+*  Title: How TO - CSS/JS Modal
+*  URL: https://www.w3schools.com/howto/howto_css_modals.asp
+
+*  Title: Bootstrap Modal Plugin
+*  URL: https://www.w3schools.com/bootstrap/bootstrap_modal.asp
+
+*  Title: Info Windows
+*  URL: https://developers.google.com/maps/documentation/javascript/infowindows
+
+*  Title: How do I get the value of text input field using JavaScript?
+*  URL: https://stackoverflow.com/questions/11563638/how-do-i-get-the-value-of-text-input-field-using-javascript
+
+*  Title: Onclick JavaScript Form Submit
+*  Author: Neeraj Agarwal
+*  Date: July 1, 2020
+*  URL: https://www.formget.com/javascript-submit-form/
+
+*  Title: How to add click event to Google Map markers stored in an array in JavaScript ?
+*  Date: Jan 1, 2023
+*  URL: https://www.geeksforgeeks.org/how-to-add-click-event-to-google-map-markers-stored-in-an-array-in-javascript/
+
+*  Title: Google Maps API Multiple Markers with Infowindows
+*  URL: https://stackoverflow.com/questions/11106671/google-maps-api-multiple-markers-with-infowindows
+
+*  Title: jQuery ready() Method
+*  URL: https://www.w3schools.com/jquery/event_ready.asp
+
+*  Title: Template Filter - escapejs
+*  URL: https://www.w3schools.com/django/ref_filters_escapejs.php
+-->
+
+{% extends 'base.html' %}
+
+{% block title %}Map View{% endblock %}
+
+{% block content %}
+
+    <script>
+        function starring(mid) {
+            if (document.getElementById('star_'+mid).checked) {
+                fetch("/fav/"+mid);
+            } else {
+                fetch("/unfav/"+mid);
+            }
+        }
+    </script>
+
+    <!--Sidebar and toggle button for it-->
+    <input type="checkbox" id="check">
+        <label for="check">
+            <i class="fas fa-arrow-right" id="btn"></i>
+            <i class="fas fa-times" id="cancel"></i>
+        </label>
+        <div class="sidebar" id="side">
+            <h3 style="text-align:center">UVA Grounds Study Spots</h3>
+            <form id="loc-search-form" style="text-align:center">
+                <input type="text" id="location-input" placeholder="Enter a location">
+                <button type="submit">Search</button>
+            </form>
+            <br>
+            <div style="text-align:center">
+                <h6>Filter by:</h6>
+                <label for="filter_food">Food</label>
+                <input type="checkbox" name="filter_food" id="filter_food">
+                <br>
+            </div>
+
+            {% for marker in markers %}
+                <div onclick='clicking("{{ marker.name }}")' class="{{ marker.food }}" id="{{ marker.name }}" style="position:relative;">
+                <hr>
+                    <div>
+                        <h6 style="margin-left:10px; color:#4b92e3">{{ marker.name }}</h6>
+                        <p style="margin-left:10px">{{ marker.description }}</p>
+                    </div>
+                    <div style="position:absolute; left:420px; top:0px;">
+                        <input id="star_{{ marker.id }}" class="star" type="checkbox" onclick='starring({{ marker.id }})' title="bookmark page" {% if marker.faved %} checked {% endif %}><br/><br/>
+                    </div>
+
+                </div>
+            {% endfor %}
+            <!--bad hack-->
+            <h3 style="text-align:center"></h3>
+            <h3 style="text-align:center"></h3>
+        </div>
+
+    <div id="uvaMap" style="width: 100%; height: 90vh;"></div>
+    <div id="myModal" class="modal" role="dialog">
+       <div class="modal-content" style="overflow:auto">
+           <span class="close">&times;</span>
+           <!-- form that pops up when right click-->
+           <form method="post" id="form_id" action="/map/">
+                {% csrf_token %}
+                <h3 style="text-align:center">Enter a Study Location</h3>
+                <label style="margin-left:30px">Location Name :</label>
+                <input type="text" id="form_name" name="name" placeholder="Name" size="60" required>
+                <div>
+                    <label style="margin-left:30px">Location Description :</label>
+                    <br>
+                    <textarea rows="4" id="form_desc" name="loc-description" cols="74" style="margin-left:30px" required></textarea>
+                </div>
+                <div>
+                    <label for="food" style="margin-left:30px">Does this study spot have food?</label>
+                    <input type="checkbox" name="food" id="food">
+                </div>
+                <input type="hidden" name="latitude" id="lat"/>
+                <input type="hidden" name="longitude" id="lng"/>
+                <input type="submit" id="submit-form" style="margin-left:30px"/>
+           </form>
+       </div>
+    </div>
+
+    <!--Delete location-->
+    <div class="modal" id="deleteModal" role="dialog">
+        <div class="modal-dialog">
+        <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Delete study spot?</h4>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this study spot? This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id ="plzDelete" class="btn btn-default" data-dismiss="modal">Yes</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--Confirmation of delete. NOTE: not included in this release-->
+    <div class="modal" id="confirmDelModal" role="dialog">
+        <div class="modal-dialog">
+        <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-body">
+                    <p>Your deletion request has been sent to admin and is waiting for approval.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-bs-dismiss="modal">Ok</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        //prevent window from popping up when right click on Windows laptops
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        function htmlDecode(input) {
+            var doc = new DOMParser().parseFromString(input, "text/html");
+            return doc.documentElement.textContent;
+        }
+        $(document).ready(function(){
+            $("#filter_food").click(function(){
+                if(document.getElementById("filter_food").checked) {
+                    $(".False").hide()
+                }
+                else{
+                    $(".False").show()
+                }
+               initMap()
+            });
+        });
+
+        curname = null
+        curdesc = null
+        curfood = null
+        curpin = null
+        var pin_vector = [];
+        var name_vector = [];
+        var desc_vector = [];
+        var permission_vector = [];
+        var food_vector = [];
+        var infowindow = new google.maps.InfoWindow({});
+        var map
+        //when user wants to edit pin, previously entered fields are pre-filled and they can re-submit
+        function eclick() {
+            const cancel = document.getElementById("cancel");
+            const check = document.getElementById("check");
+            if(check.checked){
+                cancel.click();
+            }
+
+            document.getElementById('form_name').value = curname;
+            document.getElementById('form_desc').value = curdesc;
+            document.getElementById('food').checked = (curfood=="True");
+            document.getElementById('form_id').action = "/modify/" + encodeURIComponent(curname) + "/";
+            var modal = document.getElementById("myModal");
+            modal.style.display = "block";
+
+            var span = document.getElementsByClassName("close")[0];
+            span.onclick = function () {
+                modal.style.display = "none";
+            }
+            window.onclick = function (event) {
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
+            }
+        }
+        // opens windowview when clicked via sidebar
+        function clicking(name) {
+             for(var i=0; i<pin_vector.length;i++){
+                if(name_vector[i] == name){
+                    var name_info = name_vector[i]
+                    var name_describe = desc_vector[i]
+                    var name_food = food_vector[i]
+                    curpin = pin_vector[i]
+                    curname = name_info;
+                    curdesc = name_describe;
+                    curfood = name_food;
+                    var content = '<b>Location: </b>' + name_info
+                        + '<br><b>Description: </b>' + name_describe +
+
+                        (permission_vector[i] ? '<br><br><div align="center"><button type="button" class="btn-sm" onclick="eclick()">Edit</button>' + ' '
+                        + `<button type="button" class="btn-sm" data-toggle="modal" data-target="#deleteModal">Delete</button></div>` : '')
+
+                    infowindow.setContent(content);
+                    infowindow.open(map, pin_vector[i])
+                }
+            }
+        }
+
+        document.getElementById("plzDelete").onclick = function() {
+            const cancel = document.getElementById("cancel");
+            const check = document.getElementById("check");
+            if(check.checked){
+                cancel.click();
+            }
+            infowindow.close()
+            fetch("/delete/" + encodeURIComponent(curname)); // matching url
+            curpin.setMap(null); // hides pin
+            const element = document.getElementById(curname);
+            console.log(element)
+            element.remove();
+        };
+
+        function initMap() {
+            // add map of UVA
+            var location = {lat: 38.0336, lng: -78.507980};
+            map = new google.maps.Map(document.getElementById('uvaMap'), {zoom: 15, center: location});
+            // add existing markers to map
+            {% for marker in markers %}
+                if( "{{ marker.food }}" == "True" || !document.getElementById("filter_food").checked ){
+                    var latitude = {{ marker.latitude }}
+                    var longitude = {{ marker.longitude }}
+                    var loc = {lat: parseFloat(latitude), lng: parseFloat(longitude)};
+                    var name_info = "{{ marker.name|escapejs }}"
+                    name_info = htmlDecode(name_info)
+                    var name_describe = "{{ marker.description|escapejs}}"
+                    var name_food = "{{ marker.food|escapejs }}"
+                    var creator = "{{ marker.author|escapejs }}"
+                    var status = "{{ marker.status|escapejs }}"
+                    var faved  = "{{ marker.faved }}" == "True"
+                    {% if marker.author == author.username or user.is_staff %}
+                        var permission = true
+                    {% else %}
+                        var permission = false
+                    {% endif %}
+                    var icon_url;
+                    if (status == "pending") {
+                        icon_url = "https://maps.google.com/mapfiles/ms/icons/yellow-dot.png"
+                    } else if (status == "approved") {
+                        if (creator == "{{ user.username }}") {
+                            icon_url = "https://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+                        } else {
+                            icon_url = "https://maps.google.com/mapfiles/ms/icons/red-dot.png"
+                        }
+                    }
+
+                    var pin = new google.maps.Marker({
+                        position: loc,
+                        map: map,
+                        draggable: true,
+                        animation: google.maps.Animation.DROP,
+                        icon: icon_url,
+                    });
+
+                    pin_vector.push(pin)
+                    name_vector.push(name_info)
+                    desc_vector.push(name_describe)
+                    permission_vector.push(permission)
+                    food_vector.push(name_food)
+
+                    google.maps.event.addListener(pin, 'click', (function(pin, name_info, name_describe, name_food, infowindow, permission, faved) {
+                    //google.maps.event.addListener(pin, 'click', (function(pin, name_info, name_describe, name_food, infowindow, permission) {
+                        return function() {
+                            var content = '<b>Location: </b>' + name_info
+                                + '<br><b>Description: </b>' + name_describe +
+
+                                (permission ? '<br><br><div align="center"><button type="button" class="btn-sm" onclick="eclick()">Edit</button>' + ' '
+                                    + `<button type="button" class="btn-sm" data-toggle="modal" data-target="#deleteModal">Delete</button></div>` : '')
+
+                            infowindow.setContent(content);
+                            infowindow.open(map, pin)
+                            curpin = pin;
+                            curname = name_info;
+                            curdesc = name_describe;
+                            curfood = name_food;
+                            document.getElementById("plzDelete").onclick = function() {
+                                const cancel = document.getElementById("cancel");
+                                const check = document.getElementById("check");
+                                if(check.checked){
+                                    cancel.click();
+                                }
+                                infowindow.close()
+                                fetch("/delete/" + encodeURIComponent(curname)); // matching url
+                                curpin.setMap(null); // hides pin
+                                const element = document.getElementById(curname);
+                                console.log(element)
+                                element.remove();
+                            };
+                        }
+                        })(pin, name_info, name_describe, name_food, infowindow, permission, faved))
+                    //})(pin, name_info, name_describe, name_food, infowindow, permission))
+                }
+
+                // var listItem = document.createElement('li');
+                // listItem.innerHTML = '<b>LocationId:</b> ' + id + ', <b>Name:</b> ' + name_info;
+                // pinList.appendChild(listItem);
+            {% endfor %}
+
+            // user input search box
+            var input = document.getElementById('location-input');
+            var searchBox = new google.maps.places.SearchBox(input);
+            // get location from search bar
+            document.getElementById('loc-search-form').addEventListener('submit', function (e) {
+                e.preventDefault();
+                var places = searchBox.getPlaces();
+                if (places.length === 0) {
+                    return;
+                }
+                // go to search location
+                var location = places[0].geometry.location;
+                map.setCenter(location);
+            });
+            // open form upon right click
+            google.maps.event.addListener(map, 'rightclick', function (event) {
+                var latitude = event.latLng.lat();
+                var longitude = event.latLng.lng();
+                document.getElementById('lat').value = latitude
+                document.getElementById('lng').value = longitude
+                document.getElementById('form_name').value = "";
+                document.getElementById('form_desc').value = "";
+                document.getElementById('form_id').action = "/map/";
+
+                var modal = document.getElementById("myModal");
+                modal.style.display = "block";
+
+                var span = document.getElementsByClassName("close")[0];
+                span.onclick = function () {
+                    modal.style.display = "none";
+                }
+                window.onclick = function (event) {
+                    if (event.target == modal) {
+                        modal.style.display = "none";
+                    }
+                }
+                //toggles this back to the left
+                var sidebar = document.getElementById("side");
+                const cancel = document.getElementById("cancel");
+                const check = document.getElementById("check");
+                if(check.checked){
+                    cancel.click();
+                }
+            });
+
+        }   
+
+        // function goToLocation(){
+        //         // go to search location
+        //         var location = places[0].geometry.location;
+        //         map.setCenter(location);
+
+        // }
+
+    </script>
+    <script>
+        google.maps.event.addDomListener(window, 'load', initMap);
+    </script>
+{% endblock %}
